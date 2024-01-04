@@ -1,6 +1,9 @@
 # chat_system
 
 Implementing a dialogue system through interfaces(通过接口实现对话系统)。<br>
+
+> gradio部分只能说勉强能用，还有很多需要优化的地方，但不影响正常功能使用。
+
 - [chat\_system](#chat_system)
   - [本地运行:](#本地运行)
   - [依赖项安装:](#依赖项安装)
