@@ -55,4 +55,5 @@ pip install fastapi
 pip install uvicorn
 pip install gradio
 pip install loguru
+pip install python-dotenv
 ```
