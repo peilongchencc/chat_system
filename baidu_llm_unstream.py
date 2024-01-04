@@ -69,5 +69,11 @@ def main():
     print(response.text)
     
 if __name__ == '__main__':
+    import time
+    start_time = time.time()
+    
     main()
-
+    
+    end_time = time.time() 
+    execution_time = end_time - start_time 
+    print(f"执行时间为：{execution_time} 秒")
