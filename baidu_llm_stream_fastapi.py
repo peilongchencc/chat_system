@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 import aiohttp
 import json
 import os
+import time
 from loguru import logger
 from dotenv import load_dotenv
 
@@ -24,7 +25,12 @@ logger.add("baidu_llm.log", rotation="1 GB", backtrace=True, diagnose=True, form
 API_KEY = os.getenv("BAIDU_API_KEY")
 SECRET_KEY = os.getenv("BAIDU_SECRET_KEY")
 
-async def get_access_token():
+# 初始化访问令牌和令牌过期时间
+ACCESS_TOKEN = ""
+EXPIRES_IN = 0  # token的有效期（秒）
+
+async def fetch_token():
+    global ACCESS_TOKEN, EXPIRES_IN
     try:
         token_url = f"https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={API_KEY}&client_secret={SECRET_KEY}"
 
@@ -33,10 +39,19 @@ async def get_access_token():
                 response.raise_for_status()  # 确保请求成功
                 result = await response.json()  # 解析响应为JSON
                 logger.info("成功获取访问令牌")
-                return result["access_token"]  # 返回访问令牌
+                ACCESS_TOKEN = result["access_token"]  # 访问令牌
+                EXPIRES_IN = int(result["expires_in"]) + int(time.time())      # 令牌过期时间
     except Exception as e:
         logger.error(f"获取访问令牌失败：{e}")
         raise
+
+async def get_access_token():
+    global ACCESS_TOKEN, EXPIRES_IN
+    # 如果token为空或者已过期，重新获取
+    if not ACCESS_TOKEN or time.time() > EXPIRES_IN:
+        await fetch_token()
+    return ACCESS_TOKEN
+
 
 async def call_chat_api(access_token, user_history):
     try:
@@ -61,8 +76,8 @@ async def call_chat_api(access_token, user_history):
 @app.post("/chat")
 async def chat(user_input: str = Form(...), chat_history: str = Form(...)):
     try:
+        # 每次请求前获取有效的token
         access_token = await get_access_token()  # 获取访问令牌
-
         if not user_input:
             logger.warning("用户输入为空")
             raise ValueError("用户输入为空")

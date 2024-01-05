@@ -2,3 +2,6 @@
 **/.DS_Store
 **/.vscode
 **/__pycache__
+**/gradio_cached_examples
+baidu_llm_gradio.log
+baidu_llm.log
