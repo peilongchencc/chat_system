@@ -61,3 +61,4 @@ demo = gr.ChatInterface(
 ).queue()
 
 demo.launch(server_name="0.0.0.0")  # 开放公网访问，否则默认绑定到本地IP（127.0.0.1）上，仅允许本机访问。
+# demo.launch(server_name="0.0.0.0", server_port=8866) # 如果你想要修改端口号，可以使用该示例
