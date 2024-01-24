@@ -39,6 +39,7 @@ The OpenAI API can be applied to virtually any task. We offer a range of models 
 OpenAI API 实际上可以应用于任何任务。我们提供一系列具有不同功能和价格点的模型，以及微调定制模型的能力。
 
 
+🚨🚨🚨Note:<br>
 
 ----
 
@@ -51,6 +52,7 @@ OpenAI API 实际上可以应用于任何任务。我们提供一系列具有不
 您已达到使用限额。欲了解更多详情，请查看您的使用仪表板和账单设置。如果您还有其他问题，请通过我们的帮助中心 help.openai.com 与我们联系。
 
 ----
+
 
 请将下列内容翻译为地道的中文:
 You've reached your usage limit. See your usage dashboard and billing settings for more details. If you have further questions, please contact us through our help center at help.openai.com.
