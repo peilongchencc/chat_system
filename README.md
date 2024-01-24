@@ -29,7 +29,7 @@ conda install langchain -c conda-forge
 
 Explore the API(探索这个应用程序编程接口 (API))<br>
 
-![Watch the first OpenAI Developer Day keynote(观看首届 OpenAI 开发者日主题演讲)](https://youtu.be/U9mJuUkhUzk)
+[Watch the first OpenAI Developer Day keynote(观看首届 OpenAI 开发者日主题演讲)](https://youtu.be/U9mJuUkhUzk)
 
 > OpenAI Developer Day:指的是由 OpenAI 组织的一个开发者日活动。
 > keynote: 这个词在这里指的是某个会议或活动中的主要演讲或主题演讲。通常，这种演讲由重要人物进行，旨在阐述会议的主要主题或传达重要信息。
