@@ -8,6 +8,7 @@
   - [Developer quickstart(开发者快速入门):](#developer-quickstart开发者快速入门)
     - [Get up and running with the OpenAI API(快速开始使用OpenAI API):](#get-up-and-running-with-the-openai-api快速开始使用openai-api)
     - [Account setup(账户设置):](#account-setup账户设置)
+    - [API Keys:](#api-keys)
 
 "Head to chat.openai.com."：这部分是一个建议或指令，意思是“前往 chat.openai.com。”。“Head to”是一个常用的英语短语，用来建议某人去某个地方。在这里，它意味着如果你想使用或了解更多关于ChatGPT的信息，应该访问网址“chat.openai.com”，这是一个特定的网站链接。<br>
 
@@ -96,11 +97,11 @@ First, create an OpenAI account or sign in. Next, navigate(前往；导航至) t
 
 首先，创建一个OpenAI账户或登录。接着，前往❤️**API密钥页面**并“创建新的密钥”，可以选择为密钥命名。确保将其保存在安全的地方，并且不要与任何人分享。<br>
 
+### API Keys:
 
+Your secret API keys are listed below. Please note that we do not display your secret API keys again after you generate them.<br>
 
-请将下列内容翻译为地道的中文:
-
-Your secret API keys are listed below. Please note that we do not display your secret API keys again after you generate them.
+您的 `secret API keys` 如下所列。请注意，一旦您生成这些密钥，我们将不会再次显示它们。
 
 Do not share your API key with others, or expose it in the browser or other client-side code. In order to protect the security of your account, OpenAI may also automatically disable any API key that we've found has leaked publicly.
 
@@ -111,6 +112,7 @@ Enable tracking to see usage per API key on the Usage page.
 |-----------------------|------------|----------|-------------|------------|
 | peilongchencc_openai  | sk-...eZeu | Enable   | 2023年6月8日 | 2023年6月8日 |
 
+> “TRACKING”列中的“Enable”意思是“启用”。在这里，它表示对该 API 密钥的使用情况进行追踪功能是开启的。这意味着你可以在“使用情况”页面查看到这个特定 API 密钥的使用详情，比如调用次数、使用频率等信息。这个功能对于监控和分析 API 密钥的使用情况非常有用，特别是当你想确保密钥没有被滥用时。
 
 Default organization
 
@@ -118,6 +120,29 @@ If you belong to multiple organizations, this setting controls which organizatio
 
 Note: You can also specify which organization to use for each API request. See Authentication to learn more.
 
+
+
+请不要与他人共享您的 API 密钥，也不要在浏览器或其他客户端代码中暴露它。为了保护您账户的安全，一旦发现有 API 密钥被公开泄露，OpenAI 可能会自动禁用该密钥。
+
+在“使用情况”页面上启用追踪功能，以查看每个 API 密钥的使用情况。
+
+| 名称                  | 秘密密钥    | 追踪功能  | 创建日期     | 最后使用日期  |
+|-----------------------|------------|----------|-------------|-------------|
+| peilongchencc_openai  | sk-...eZeu | 启用      | 2023年6月8日 | 2023年6月8日 |
+
+
+默认组织
+
+如果您属于多个组织，此设置将控制在使用上述 API 密钥进行请求时默认使用哪个组织。
+
+备注：您也可以为每个 API 请求指定使用哪个组织。请参阅“身份验证”了解更多信息。
+
+
+请将下列内容翻译为地道的中文:
+
+
+
+"TRACKING"为"Enable"是什么意思？可用？
 
 请将下列内容翻译为地道的英文:
 
