@@ -237,13 +237,31 @@ Now that you have made you first OpenAI API request, it is time to explore what 
 
 请将下列内容翻译为地道的中文:
 
+我想要使用`dotenv`加载我的API密钥，请给出使用
 
 
+请给出一份python调用openai的GPT3.5的API的示例代码。
 
 struggle是什么意思？
 
 请将下列内容翻译为地道的英文:
 
+我使用的是下列写法，为什么和你的写法不一样呢？
+
+```python
+from openai import OpenAI
+client = OpenAI()
+
+completion = client.chat.completions.create(
+  model="gpt-3.5-turbo",
+  messages=[
+    {"role": "system", "content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair."},
+    {"role": "user", "content": "Compose a poem that explains the concept of recursion in programming."}
+  ]
+)
+
+print(completion.choices[0].message)
+```
 
 ## settings:
 
