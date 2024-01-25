@@ -9,6 +9,12 @@
     - [Get up and running with the OpenAI API(快速开始使用OpenAI API):](#get-up-and-running-with-the-openai-api快速开始使用openai-api)
     - [Account setup(账户设置):](#account-setup账户设置)
     - [API Keys:](#api-keys)
+    - [Quickstart language selection(快速开始语言选择):](#quickstart-language-selection快速开始语言选择)
+    - [Sending your first API request(发送您的第一个API请求):](#sending-your-first-api-request发送您的第一个api请求)
+      - [chatcompletions(聊天补全):](#chatcompletions聊天补全)
+      - [Embedding:](#embedding)
+      - [images:](#images)
+    - [Next steps(接下来的步骤):](#next-steps接下来的步骤)
   - [settings:](#settings)
     - [Billing settings(账单设置):](#billing-settings账单设置)
 
@@ -132,6 +138,112 @@ Note: You can also specify which organization to use for each API request. See A
 
 备注：您也可以为每个 API 请求指定使用哪个组织。请参阅“身份验证”了解更多信息。<br>
 
+### Quickstart language selection(快速开始语言选择):
+
+Select the tool or language(这里由下文可知指的是编程语言) you want to get started using the OpenAI API with.<br>
+
+请选择您希望使用 OpenAI API 开始使用的工具或编程语言。<br>
+
+Python is a popular programming language that is commonly(通常地) used for data applications, web development(网页开发), and many other programming tasks due to its ease of use. OpenAI provides a custom(定制的) Python library which makes working with the OpenAI API in Python simple and efficient.<br>
+
+> "custom" 表示 "定制的"，"自定义的"在英语中通常可以表达为 "customized" 或 "personalized"。例如，"customized computer" 或 "personalized plan" 分别表示“定制的电脑”和“个性化的计划”。
+
+Python 是一种流行的编程语言，因其易用性，常用于数据应用、网页开发和许多其他编程任务。OpenAI 提供了一个定制的 Python 库，使得在 Python 中使用 OpenAI API 变得简单高效。<br>
+
+### Sending your first API request(发送您的第一个API请求):
+
+After you have Python configured and an API key setup, the final step is to send a request to the OpenAI API using the Python library. To do this, create a file named `openai-test.py` using th terminal or an IDE.<br>
+
+在配置好 Python 并设置好 API 密钥之后，最后一步是使用 Python 库向 OpenAI API 发送请求。为此，请使用终端或集成开发环境创建一个名为 `openai-test.py` 的文件。<br>
+
+Inside the file, copy and paste one of the examples below:<br>
+
+在文件中，复制并粘贴以下示例之一：<br>
+
+#### chatcompletions(聊天补全):
+
+```python
+from openai import OpenAI
+client = OpenAI()
+
+completion = client.chat.completions.create(
+  model="gpt-3.5-turbo",
+  messages=[
+    {"role": "system", "content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair."},
+    {"role": "user", "content": "Compose a poem that explains the concept of recursion in programming."}
+  ]
+)
+
+print(completion.choices[0].message)
+```
+
+To run the code, enter `python openai-test.py` into the terminal / command line.<br>
+
+要运行代码，请在终端/命令行中输入 `python openai-test.py`。<br>
+
+The Chat Completions example highlights(突出显示；强调) just one area of strength(力量；强项) for our models: creative ability. Explaining recursion(递归) (the programming topic) in a well formatted poem is something both the best developers and best poets(诗人) would struggle with. In this case, gpt-3.5-turbo does it effortlessly.<br>
+
+“聊天补全”示例只展示了我们模型的一个强项：创造力。用格式良好的诗歌解释递归（编程话题）是即使最优秀的开发者和诗人也会感到困难的事情。而在这个例子中，**gpt-3.5-turbo** 轻松地做到了。<br>
+
+> "Turbo" 这个词最初来源于“涡轮增压器（turbocharger）”，是一种用于提升发动机效能的装置。在更广泛的用法中，“turbo”通常用来形容某事物具有快速、高效或强大的性质。例如，在科技和软件领域，"turbo" 通常用来表示某个版本或型号具有更快的处理速度、更高的性能或更先进的功能。在上文提到的 "gpt-3.5-turbo" 中，"turbo" 用来指代该模型的高效率或高性能特点。
+
+
+#### Embedding:
+
+```python
+from openai import OpenAI
+client = OpenAI()
+
+response = client.embeddings.create(
+  model="text-embedding-ada-002",
+  input="The food was delicious and the waiter..."
+)
+
+print(response)
+```
+
+#### images:
+
+```python
+from openai import OpenAI
+client = OpenAI()
+
+response = client.images.generate(
+  prompt="A cute baby sea otter",
+  n=2,
+  size="1024x1024"
+)
+
+print(response)
+```
+
+### Next steps(接下来的步骤):
+
+Now that you have made you first OpenAI API request, it is time to explore what else is possible:<br>
+
+既然您已经完成了首次OpenAI API请求，现在是时候探索更多可能性了：<br>
+
+- For more detailed information on our models and the API, see our [GPT guide](https://platform.openai.com/docs/guides/text-generation).(想要了解我们的模型和API的更多详细信息，请查看我们的GPT指南。)
+
+- Visit the [OpenAI Cookbook](https://cookbook.openai.com/) for in-depth example API use-cases, as well as code snippets for common tasks.(访问OpenAI食谱，了解深入的API使用案例以及常见任务的代码片段。)
+
+- Wondering what OpenAI's models are capable of? Check out our library of [example prompts](https://platform.openai.com/examples).(想知道OpenAI的模型能做什么？查看我们的示例提示库。)
+
+- Want to try the API without writing any code? Start experimenting in the [Playground](https://platform.openai.com/playground).(想不编写任何代码就尝试API？开始在Playground实验。)
+
+- Keep our [usage policies](https://openai.com/policies/usage-policies) in mind as you start building.(开始构建时，请牢记我们的使用政策。)
+
+
+
+请将下列内容翻译为地道的中文:
+
+
+
+
+struggle是什么意思？
+
+请将下列内容翻译为地道的英文:
+
 
 ## settings:
 
@@ -140,16 +252,3 @@ Note: You can also specify which organization to use for each API request. See A
 Note: This does not reflect the status of your ChatGPT account.<br>
 
 备注：这并不反映您的ChatGPT账户的状态。<br>
-
-
-请将下列内容翻译为地道的中文:
-
-Quickstart language selection
-
-Select the tool or language you want to get started using the OpenAI API with.
-
-Python is a popular programming language that is commonly used for data applications, web development, and many other programming tasks due to its ease of use. OpenAI provides a custom Python library which makes working with the OpenAI API in Python simple and efficient.
-
-请将下列内容翻译为地道的英文:
-
-请将图片中的内容转为markdown表格形式
