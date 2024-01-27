@@ -21,6 +21,8 @@
       - [unstreaming(非流式输出):](#unstreaming非流式输出)
       - [streaming(流式输出):](#streaming流式输出)
       - [multi\_turn\_dialogue(多轮对话):](#multi_turn_dialogue多轮对话)
+      - [异步方式调用--官方示例:](#异步方式调用--官方示例)
+      - [异步方式调用--使用dotenv的简单示例:](#异步方式调用--使用dotenv的简单示例)
       - [API中的system、user、assistant作用解析:](#api中的systemuserassistant作用解析)
     - [Next steps(接下来的步骤):](#next-steps接下来的步骤)
   - [settings:](#settings)
@@ -450,6 +452,74 @@ if __name__ == '__main__':
         # fetch the results of the API response and display them in a streaming manner on the terminal, 
         # while simultaneously(同时) updating chat_history.
         chat_history = get_openai_response(chat_history)
+```
+
+#### 异步方式调用--官方示例:
+
+```python
+import os
+import asyncio
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI(
+    # This is the default and can be omitted
+    api_key=os.environ.get("OPENAI_API_KEY"),
+)
+
+
+async def main() -> None:
+    chat_completion = await client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": "Say this is a test",
+            }
+        ],
+        model="gpt-3.5-turbo",
+    )
+
+
+asyncio.run(main())
+```
+
+#### 异步方式调用--使用dotenv的简单示例:
+
+```python
+import os
+import asyncio
+from loguru import logger
+from dotenv import load_dotenv
+import openai
+
+# 加载环境变量
+dotenv_path = '.env.local'
+load_dotenv(dotenv_path=dotenv_path)
+
+# 设置日志
+logger.remove()
+logger.add("openai_stream.log", rotation="1 GB", backtrace=True, diagnose=True, format="{time} {level} {message}")
+
+async def main():
+    client = openai.AsyncOpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+    )
+
+    completion = await client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair."},
+            {"role": "user", "content": "Compose a poem that explains the concept of recursion in programming."}
+        ],
+        stream=True
+    )
+
+    async for chunk in completion:
+        if chunk.choices[0].delta.content is not None:
+            print(chunk.choices[0].delta.content, end="")
+
+# 运行异步主函数
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 #### API中的system、user、assistant作用解析:
