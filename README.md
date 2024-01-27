@@ -456,6 +456,14 @@ if __name__ == '__main__':
 
 #### 异步方式调用--官方示例:
 
+OpenAI官方提供了异步方式调用的示例代码，参考网址如下:<br>
+
+```txt
+https://github.com/openai/openai-python/blob/9e6e1a284eeb2c20c05a03831e5566a4e9eaba50/README.md
+```
+
+具体代码如下:<br>
+
 ```python
 import os
 import asyncio
