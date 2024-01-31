@@ -195,3 +195,117 @@ print(type(llm_response))   # <class 'langchain_core.messages.ai.AIMessage'>
 print(llm_response.content) # 你好！有什么我可以帮助你的吗？
 ```
 
+We can also guide(指导；引导) it's response with a prompt template(模板). Prompt templates are used to convert(转换) raw user input to a better input to the LLM.<br>
+
+我们还可以使用提示模板来引导其回应。提示模板用于将原始用户输入转换为更适合语言模型（LLM）的输入。
+
+```python
+from langchain_core.prompts import ChatPromptTemplate
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are world class technical documentation writer."),  # 英文的意思是: 你是世界级的技术文档撰写专家(写手)。
+    ("user", "{input}")
+])
+```
+
+We can now combine these into a simple LLM chain:<br>
+
+现在，我们可以将这些组合成一个简单的LLM链：<br>
+
+```python
+chain = prompt | llm 
+```
+
+We can now invoke(调用) it and ask the same question. It still won't know the answer, but it should respond(回应) in a more proper tone for a technical writer!<br>
+
+现在我们可以调用它并询问相同的问题。它仍然不会知道答案，但应该以更适合技术写手的语气回应！<br>
+
+```python
+chain.invoke({"input": "how can langsmith help with testing?"})
+```
+
+笔者所用的完整代码如下:<br>
+
+```python
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+
+# 加载环境变量
+dotenv_path = '.env.local'
+load_dotenv(dotenv_path=dotenv_path)
+
+llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are world class technical documentation writer."),
+    ("user", "{input}")
+])
+
+chain = prompt | llm 
+
+chain_response = chain.invoke({"input": "how can langsmith help with testing?"})
+
+print(chain_response.content)
+```
+
+The output of a ChatModel (and therefore, of this chain) is a message. However, it's often much more convenient to work with strings. Let's add a simple output parser to convert the chat message to a string.<br>
+
+> "and therefore, of this chain" 这个短语的意思是 "因此，对于这个链也是如此"。搞不懂 "因此，对于这个链也是如此" 在这句话中的含义，但不妨碍整句话的理解。
+
+ChatModel（因此，对于这个链也是如此）的输出是一条消息。然而，使用字符串通常更方便。让我们添加一个简单的输出解析器，将聊天消息转换为字符串。<br>
+
+```python
+from langchain_core.output_parsers import StrOutputParser
+
+output_parser = StrOutputParser()
+```
+
+We can now add this to the previous(之前的) chain:<br>
+
+现在我们可以将这个添加到之前的链中：<br>
+
+```python
+chain = prompt | llm | output_parser
+```
+
+We can now invoke(调用) it and ask the same question. The answer will now be a string (rather than a ChatMessage).<br>
+
+现在我们可以调用它并提出同样的问题。现在的答案将是一个字符串（而不是ChatMessage）。<br>
+
+```python
+chain.invoke({"input": "how can langsmith help with testing?"})
+```
+
+笔者所用完整代码:<br>
+
+```python
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# 加载环境变量
+dotenv_path = '.env.local'
+load_dotenv(dotenv_path=dotenv_path)
+
+llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are world class technical documentation writer."),
+    ("user", "{input}")
+])
+
+output_parser = StrOutputParser()
+
+chain = prompt | llm | output_parser
+
+chain_response = chain.invoke({"input": "how can langsmith help with testing?"})
+
+print(chain_response)
+print(type(chain_response))     # <class 'str'>
+```
+
+这次添加了结果解析器，输出的直接是 `string` 类型的结果，其实和之前笔者使用的 `print(chain_response.content)` 效果相同。<br>
+
