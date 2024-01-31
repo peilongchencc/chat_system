@@ -1,5 +1,7 @@
 # LangChain
 
+本项目基于LangChain官网翻译、添加自己的理解，主要用于个人研究、学习。<br>
+
 - [LangChain](#langchain)
   - [Quickstart(快速入门):](#quickstart快速入门)
     - [Setup(安装):](#setup安装)
