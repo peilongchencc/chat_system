@@ -1,6 +1,6 @@
-# langchain
+# LangChain
 
-- [langchain](#langchain)
+- [LangChain](#langchain)
   - [Quickstart(快速入门):](#quickstart快速入门)
     - [Setup(安装):](#setup安装)
       - [Jupyter Notebook:](#jupyter-notebook)
