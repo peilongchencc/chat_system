@@ -9,6 +9,8 @@
       - [Installation:](#installation)
     - [LangSmith:](#langsmith)
     - [Building with LangChain(使用LangChain构建应用):](#building-with-langchain使用langchain构建应用)
+    - [LLM Chain:](#llm-chain)
+      - [OpenAI:](#openai)
 
 
 ## Quickstart(快速入门):
@@ -111,4 +113,85 @@ We will cover these at a high level, but there are lot of details to all of thes
 > 推测大概是指站在高处更容易看清事物本质。
 
 我们将从高层次上介绍这些内容，但这些都有很多细节！我们将链接到相关文档。<br>
+
+### LLM Chain:
+
+For this getting started guide, we will provide two options: using OpenAI (a popular model available via API) or using a local open source model.<br>
+
+对于这个入门指南，我们将提供两种选择：使用 OpenAI（一种可以通过 API 调用的流行模型）或使用本地开源模型。<br>
+
+#### OpenAI:
+
+First we'll need to import the LangChain x OpenAI integration(集成) package.<br>
+
+首先，我们需要导入 LangChain 与 OpenAI 的集成包。<br>
+
+```bash
+pip install langchain-openai
+```
+
+Accessing the API requires an API key, which you can get by creating an account(账户) and heading(前往) [here](https://platform.openai.com/api-keys). Once we have a key we'll want to set it as an environment variable by running:<br>
+
+要访问 API，你需要一个 API 密钥，可以通过创建一个账户并前往这里来获取。一旦我们拥有了密钥，我们会想要通过运行以下命令将其设置为一个环境变量：<br>
+
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+```
+
+We can then initialize the model:<br>
+
+然后我们可以初始化模型：<br>
+
+```python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI()
+```
+
+If you'd prefer not to set an environment variable you can pass the key in directly(直接地) via the `openai_api_key` named parameter when initiating the OpenAI LLM class:<br>
+
+如果你不想设置环境变量，你可以在初始化 OpenAI LLM 类时，直接通过 openai_api_key 这个命名参数传入密钥：<br>
+
+```python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(openai_api_key="...")
+```
+
+Once you've installed and initialized the LLM of your choice, we can try using it!<br>
+
+一旦你安装并初始化了你选择的 LLM，我们就可以尝试使用它了！<br>
+
+Let's ask it what LangSmith is - this is something that wasn't present in the training data so it shouldn't have a very good response.<br>
+
+让我们问问它 LangSmith 是什么 - 这是训练数据中没有的内容，所以它应该不会有很好的回答。<br>
+
+```python
+llm.invoke("how can langsmith help with testing?")
+```
+
+> 在编程领域，"invoke a function" 表示 "调用一个函数"，所以上述代码中 "invoke" 的意思大概率是 "调用"。
+
+笔者在IDE中测试的效果如下:<br>
+
+> 必须保证终端能够连接openai服务，才可以使用以下代码。
+> 经测试，运行`llm.invoke("...")`后终端以非流式输出形式返回。
+
+```python
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+
+# 加载环境变量
+dotenv_path = '.env.local'
+load_dotenv(dotenv_path=dotenv_path)
+
+llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
+
+llm_response = llm.invoke("你好")
+
+print(llm_response)     # content='你好！有什么我可以帮助你的吗？'
+print(type(llm_response))   # <class 'langchain_core.messages.ai.AIMessage'>
+print(llm_response.content) # 你好！有什么我可以帮助你的吗？
+```
 
