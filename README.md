@@ -11,6 +11,9 @@
     - [Building with LangChain(使用LangChain构建应用):](#building-with-langchain使用langchain构建应用)
     - [LLM Chain:](#llm-chain)
       - [OpenAI:](#openai)
+      - [Local:](#local)
+    - [拓展-python操作符| 的用法:](#拓展-python操作符-的用法)
+    - [LangChain使用 | 操作符的原理:](#langchain使用--操作符的原理)
 
 
 ## Quickstart(快速入门):
@@ -308,4 +311,98 @@ print(type(chain_response))     # <class 'str'>
 ```
 
 这次添加了结果解析器，输出的直接是 `string` 类型的结果，其实和之前笔者使用的 `print(chain_response.content)` 效果相同。<br>
+
+#### Local:
+
+Ollama allows you to run open-source large language models, such as Llama 2, locally.<br>
+
+Ollama 使你能够在本地运行开源的大型语言模型，比如 Llama 2。<br>
+
+First, follow these instructions(指示) to set up and run a local Ollama instance(实例):<br>
+
+首先，按照以下指示来设置并运行一个本地的 Ollama 实例：<br>
+
+- Download
+- Fetch a model via `ollama pull llama2`(通过 `ollama pull llama2` 命令获取模型)
+
+Then, make sure the Ollama server is running. After that, you can do:<br>
+
+然后，确保 Ollama 服务器正在运行。之后，你可以进行：<br>
+
+
+### 拓展-python操作符| 的用法:
+
+Python 中的 `|` 操作符主要有两种用途，具体用法取决于它被用在什么上下文中：<br>
+
+1. **按位或（Bitwise OR）**：当 `|` 用于整数时，它执行按位或操作。这意味着对两个数的二进制表示进行操作，只要对应位中至少有一个为1，则结果的该位也为1。
+
+例如：<br>
+
+```python
+a = 0b1010  # 二进制表示，等于十进制中的10
+b = 0b0101  # 二进制表示，等于十进制中的5
+result = a | b  # 结果将是0b1111，即十进制中的15
+```
+
+2. **集合的并集（Set Union）**：当 `|` 用在两个集合上时，它返回一个包含所有在两个集合中的元素的新集合，相当于两个集合的并集。
+
+例如：<br>
+
+```python
+set1 = {1, 2, 3}
+set2 = {3, 4, 5}
+result = set1 | set2  # 结果将是{1, 2, 3, 4, 5}
+```
+
+从 Python 3.9 开始，`|` 还可以用于字典，表示合并两个字典：<br>
+
+3. **字典的合并（Dictionary Merge）**：使用 `|` 操作符可以合并两个字典，如果两个字典有相同的键，则第二个字典中的键值对会覆盖第一个字典中的键值对。
+
+例如：<br>
+
+```python
+dict1 = {'a': 1, 'b': 2}
+dict2 = {'b': 3, 'c': 4}
+result = dict1 | dict2  # 结果将是{'a': 1, 'b': 3, 'c': 4}
+```
+
+这些是 `|` 操作符在 Python 中的主要用途。它的确切行为取决于操作数的类型。<br>
+
+### LangChain使用 | 操作符的原理:
+
+`LangChain` 使用 `|` 操作符的能力不是 Python 语言内建的功能，而是通过自定义类和重载运算符实现的。Python 允许类通过定义特殊方法（也称为魔术方法或双下划线方法）来重载（override）或实现特定的运算符行为。对于 `|` 操作符，相关的魔术方法是 `__or__`。<br>
+
+> 经Debug验证，LangChain使用的确实是 `__or__`方法。
+
+当你 `LangChain` 使用 `|` 操作符以非标准方式（例如，不是按位或、集合并集或字典合并），这通常意味着该类定义了一个 `__or__` 方法来自定义 `|` 操作符的行为。<br>
+
+这种技术允许开发者创建更具表达性和领域特定的语法，提高代码的可读性和易用性。例如，一个数据处理库可能允许你将数据转换或过滤操作以链式方式连接起来，使用 `|` 操作符来表示这种连接，使得代码更加直观。<br>
+
+这里是一个简化的例子，演示如何为一个类重载 `|` 操作符：<br>
+
+```python
+class CustomClass:
+    def __init__(self, value):
+        self.value = value
+
+    # 定义 | 操作符的行为
+    def __or__(self, other):
+        # 这里可以定义任何自定义逻辑
+        # 例如，我们可以简单地合并两个对象的值
+        return CustomClass(self.value + other.value)
+
+# 使用自定义的 | 操作符
+a = CustomClass(5)
+b = CustomClass(10)
+result = a | b
+print(result.value)  # 输出：15
+```
+
+在这个例子中，`CustomClass` 的实例 `a` 和 `b` 能够使用 `|` 操作符，其行为是将两个实例的 `value` 属性值相加，因为我们在 `CustomClass` 中定义了 `__or__` 方法来实现这一行为。<br>
+
+本质上执行的是 `a | b` 执行的是 `a.__or__(b)` ，把 `b` 作为了 `other` 。<br>
+
+具体逻辑图如下:<br>
+
+![](./materials/operator_logic.jpg)
 
