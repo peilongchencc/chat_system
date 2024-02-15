@@ -1,133 +1,21 @@
 请将下列内容翻译为地道的中文：
 
-A unit of work that can be invoked, batched, streamed, transformed and composed.
+### Retrieval Chain(检索链--查找并提取的过程):
 
-Key Methods
-===========
+In order to properly(恰当的) answer the original(原始的) question ("how can langsmith help with testing?"), we need to provide additional(额外的) context to the LLM.<br>
 
-* invoke/ainvoke: Transforms a single input into an output.
-* batch/abatch: Efficiently transforms multiple inputs into outputs.
-* stream/astream: Streams output from a single input as it's produced.
-* astream_log: Streams output and selected intermediate results from an input.
+为了恰当回答原始问题（"langsmith 如何帮助进行测试？"），我们需要向 LLM 提供额外的上下文。<br>
 
-Built-in optimizations:
-
-* Batch: By default, batch runs invoke() in parallel using a thread pool executor.
-            Override to optimize batching.
-
-* Async: Methods with "a" suffix are asynchronous. By default, they execute
-            the sync counterpart using asyncio's thread pool.
-            Override for native async.
-
-All methods accept an optional config argument, which can be used to configure
-execution, add tags and metadata for tracing and debugging etc.
-
-Runnables expose schematic information about their input, output and config via
-the input_schema property, the output_schema property and config_schema method.
-
-LCEL and Composition
-====================
-
-The LangChain Expression Language (LCEL) is a declarative way to compose Runnables
-into chains. Any chain constructed this way will automatically have sync, async,
-batch, and streaming support.
-
-The main composition primitives are RunnableSequence and RunnableParallel.
-
-RunnableSequence invokes a series of runnables sequentially, with one runnable's
-output serving as the next's input. Construct using the `|` operator or by
-passing a list of runnables to RunnableSequence.
-
-RunnableParallel invokes runnables concurrently, providing the same input
-to each. Construct it using a dict literal within a sequence or by passing a
-dict to RunnableParallel.
-
-
-For example,
-
-.. code-block:: python
-
-    from langchain_core.runnables import RunnableLambda
-
-    # A RunnableSequence constructed using the `|` operator
-    sequence = RunnableLambda(lambda x: x + 1) | RunnableLambda(lambda x: x * 2)
-    sequence.invoke(1) # 4
-    sequence.batch([1, 2, 3]) # [4, 6, 8]
-
-
-    # A sequence that contains a RunnableParallel constructed using a dict literal
-    sequence = RunnableLambda(lambda x: x + 1) | {
-        'mul_2': RunnableLambda(lambda x: x * 2),
-        'mul_5': RunnableLambda(lambda x: x * 5)
-    }
-    sequence.invoke(1) # {'mul_2': 4, 'mul_5': 10}
-
-Standard Methods
-================
-
-All Runnables expose additional methods that can be used to modify their behavior
-(e.g., add a retry policy, add lifecycle listeners, make them configurable, etc.).
-
-These methods will work on any Runnable, including Runnable chains constructed
-by composing other Runnables. See the individual methods for details.
-
-For example,
-
-.. code-block:: python
-
-    from langchain_core.runnables import RunnableLambda
-
-    import random
-
-    def add_one(x: int) -> int:
-        return x + 1
-
-
-    def buggy_double(y: int) -> int:
-        '''Buggy code that will fail 70% of the time'''
-        if random.random() > 0.3:
-            print('This code failed, and will probably be retried!')
-            raise ValueError('Triggered buggy code')
-        return y * 2
-
-    sequence = (
-        RunnableLambda(add_one) |
-        RunnableLambda(buggy_double).with_retry( # Retry on failure
-            stop_after_attempt=10,
-            wait_exponential_jitter=False
-        )
-    )
-
-    print(sequence.input_schema.schema()) # Show inferred input schema
-    print(sequence.output_schema.schema()) # Show inferred output schema
-    print(sequence.invoke(2)) # invoke the sequence (note the retry above!!)
-
-Debugging and tracing
-=====================
-
-As the chains get longer, it can be useful to be able to see intermediate results
-to debug and trace the chain.
-
-You can set the global debug flag to True to enable debug output for all chains:
-
-    .. code-block:: python
-
-        from langchain_core.globals import set_debug
-        set_debug(True)
-
-Alternatively, you can pass existing or custom callbacks to any given chain:
-
-    .. code-block:: python
-
-        from langchain_core.tracers import ConsoleCallbackHandler
-
-        chain.invoke(
-            ...,
-            config={'callbacks': [ConsoleCallbackHandler()]}
-        )
-
-For a UI (and much more) checkout LangSmith: https://docs.smith.langchain.com/
+ We can do this via retrieval. Retrieval is useful when you have too much data to pass to the LLM directly(直接地)(too..to... 太...而不能...). You can then use a retriever to fetch only the most relevant pieces(最相关的片段) and pass those in.<br>
 
 
 
-langchain中 `chain = prompt | llm | output_parser` 的"|"操作是什么意思？如何实现类似于LangChain中的"|"操作符功能，请给出示例代码，并解释代码的执行逻辑。
+In this process, we will look up relevant documents from a Retriever and then pass them into the prompt. A Retriever can be backed by anything - a SQL table, the internet, etc - but in this instance we will populate a vector store and use that as a retriever. For more information on vectorstores, see this documentation.
+
+First, we need to load the data that we want to index. In order to do this, we will use the WebBaseLoader. This requires installing BeautifulSoup:
+
+这可以通过检索来实现。当你有太多数据不能直接传递给 LLM 时，检索非常有用。你可以使用检索器只获取最相关的数据片段然后传入。
+
+在这个过程中，我们将从检索器中查找相关文档，然后将它们传入提示中。检索器可以由任何东西支持——一个 SQL 表，互联网等——但在这个例子中，我们将填充一个向量存储并使用它作为检索器。有关向量存储的更多信息，请参阅此文档。
+
+首先，我们需要加载我们想要索引的数据。为了做到这一点，我们将使用 WebBaseLoader。这需要安装 BeautifulSoup：
