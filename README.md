@@ -15,6 +15,7 @@
     - [拓展-python操作符| 的用法:](#拓展-python操作符-的用法)
     - [LangChain使用 | 操作符的原理:](#langchain使用--操作符的原理)
     - [Chain Debug:](#chain-debug)
+    - [Retrieval Chain(检索链--查找并提取的过程):](#retrieval-chain检索链--查找并提取的过程)
 
 
 ## Quickstart(快速入门):
@@ -583,3 +584,126 @@ class RunnableSequence(RunnableSerializable[Input, Output]):
 
 ![](./materials/chain_debug.jpg)
 
+### Retrieval Chain(检索链--查找并提取的过程):
+
+In order to properly(恰当的) answer the original(原始的) question ("how can langsmith help with testing?"), we need to provide additional(额外的) context to the LLM.<br>
+
+为了恰当回答原始问题（"langsmith 如何帮助进行测试？"），我们需要向 LLM 提供额外的上下文。<br>
+
+ We can do this via retrieval. Retrieval is useful when you have too much data to pass to the LLM directly(直接地)(too..to... 太...而不能...). You can then use a retriever to fetch only the most relevant pieces(最相关的片段) and pass those in.<br>
+
+这可以通过检索来实现。当你有太多数据不能直接传递给 LLM 时，检索非常有用。你可以使用检索器只获取最相关的数据片段然后传入。<br>
+
+In this process, we will look up(查询) relevant documents from a Retriever and then pass them into the prompt. A Retriever can be backed(可以依据...) by anything - a SQL table, the internet, etc - but in this instance(实例) we will populate(生活于；填充) a vector store and use that as a retriever. For more information on vectorstores, see this [documentation](https://python.langchain.com/docs/modules/data_connection/vectorstores).<br>
+
+在这个过程中，我们将从检索器中查找相关文档，然后将它们传入提示中。检索器可以由任何东西支持——一个 SQL 表，互联网等——但在这个例子中，我们将填充一个向量存储并使用它作为检索器。有关向量存储的更多信息，请参阅此文档。<br>
+
+First, we need to load(加载) the data that we want to index(检索). In order to do this, we will use the `WebBaseLoader`. This requires installing `BeautifulSoup`:<br>
+
+首先，我们需要加载我们想要索引的数据。为了做到这一点，我们将使用 `WebBaseLoader` 。这需要安装 `BeautifulSoup`：<br>
+
+```bash
+pip install beautifulsoup4
+```
+
+After that, we can import and use WebBaseLoader.<br>
+
+之后，我们可以导入并使用 WebBaseLoader。<br>
+
+```python
+from langchain_community.document_loaders import WebBaseLoader
+loader = WebBaseLoader("https://docs.smith.langchain.com/overview")
+
+docs = loader.load()
+```
+
+代码解释:<br>
+
+上述代码使用了`langchain_community.document_loaders`模块中的`WebBaseLoader`类，目的是从指定的URL加载文档。具体来说，它创建了一个指向URL "https://docs.smith.langchain.com/overview" 的`WebBaseLoader`实例。然后，调用此实例上的`load`方法来从指定的URL获取和加载内容。<br>
+
+以下是`WebBaseLoader`工作方式及其功能的详细解释，这些信息根据LangChain文档提供：<br>
+
+- **初始化**：`WebBaseLoader`在初始化时可以设置多个参数，如`web_path`（要从中加载的URLs）、`header_template`（请求的HTTP头）和`verify_ssl`（是否验证SSL证书）等。此类旨在使用`urllib`加载HTML页面，并用`BeautifulSoup`解析，`BeautifulSoup`是一个用于从HTML和XML文件中提取数据的库【7†来源】。
+
+- **加载方法**：`load`方法特别用于从初始化时指定的URL(s)获取和解析HTML内容。它使用`BeautifulSoup`进行解析，如果提供了多个URLs，也可以处理。加载器支持异步操作，请求的速率限制，以及通过BeautifulSoup进行自定义解析选项。
+
+- **功能**：该类除了`load`方法外，还提供了如`aload`（异步加载）、`fetch_all`（并发带速率限制地获取多个URLs）、`lazy_load`（按需加载内容）以及`scrape`或`scrape_all`（用BeautifulSoup获取和解析内容）等多种方法。这些方法允许在灵活的网页抓取和内容处理场景中使用。
+
+这个加载器是LangChain文档加载基础设施的一部分，旨在促进网页内容的检索和处理，以供下游应用使用，如自然语言处理任务、数据分析或输入到机器学习模型中。<br>
+
+Next, we need to index it into a vectorstore. This requires a few components, namely an [embedding model](https://python.langchain.com/docs/modules/data_connection/text_embedding) and [a vectorstore](https://python.langchain.com/docs/modules/data_connection/vectorstores).<br>
+
+接下来，我们需要将其索引到一个向量存储中。这需要几个组件，即一个嵌入模型和一个向量存储。<br>
+
+For embedding models, we once again provide examples for accessing via OpenAI or via local models.<br>
+
+对于嵌入模型，我们再次提供了通过 OpenAI 或通过本地模型访问的例子。<br>
+
+Make sure you have the `langchain_openai` package installed an the appropriate environment variables set (these are the same as needed for the LLM).<br>
+
+请确保你已安装 `langchain_openai` 包，并设置了适当的环境变量（这些与使用大型语言模型（LLM）所需的环境变量相同）。<br>
+
+```python
+from langchain_openai import OpenAIEmbeddings
+
+embeddings = OpenAIEmbeddings()
+```
+
+Now, we can use this embedding model to ingest(摄入；导入) documents into a vectorstore. We will use a simple local vectorstore, [FAISS](https://python.langchain.com/docs/integrations/vectorstores/faiss), for simplicity's sake.<br>
+
+> sake 通常用于表达做某事的原因或目的。例如，"for simplicity's sake" 意味着为了简单起见；"for the sake of clarity" 意味着为了清晰起见。
+
+现在，我们可以使用这个嵌入模型将文档摄入到一个向量存储中。为了简单起见，我们将使用一个简单的本地向量存储，FAISS。<br>
+
+First we need to install the required packages for that:<br>
+
+首先，我们需要安装所需的包：<br>
+
+```bash
+pip install faiss-cpu
+```
+
+Then we can build our index:<br>
+
+然后我们可以构建我们的索引：<br>
+
+```python
+from langchain_community.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# "RecursiveCharacterTextSplitter"可以拆解为几个部分来理解：
+
+# Recursive（递归的）、Character（字符）、Text（文本）、Splitter（分割器）
+
+# "RecursiveCharacterTextSplitter"大致意味递归地将文本按字符分割。从一个较大的文本块开始，并递归地将其分解为单个字符，每次迭代处理更小的文本片段，直到整个文本被细分为单独的字符。
+
+text_splitter = RecursiveCharacterTextSplitter()
+documents = text_splitter.split_documents(docs)
+vector = FAISS.from_documents(documents, embeddings)
+```
+
+点击 `langchain_community.vectorstores` 后内容详解:<br>
+
+**Vector store** stores embedded data and performs vector search.（**向量存储**用于存储嵌入数据并执行向量搜索。）<br>
+
+One of the most common(常见的) ways to store and search over unstructured(非结构化) data is to embed it and store the resulting embedding vectors, and then query the store and retrieve(检索) the data that are 'most similar'(最相似) to the embedded query.<br>
+
+存储和搜索非结构化数据的最常见方法之一是将其向量化，存储转化后的词向量，然后查询并检索与嵌入查询“最相似”的数据。<br>
+
+**Class hierarchy(类层次结构):**
+
+.. code-block(代码块)::<br>
+
+```python
+VectorStore --> <name>  # Examples: Annoy, FAISS, Milvus
+
+BaseRetriever --> VectorStoreRetriever --> <name>Retriever  # Example: VespaRetriever
+```
+
+**Main helpers(主要助手):**<br>
+
+.. code-block(代码块)::<br>
+
+```python
+Embeddings, Document
+```
