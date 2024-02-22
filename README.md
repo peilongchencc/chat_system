@@ -707,3 +707,67 @@ BaseRetriever --> VectorStoreRetriever --> <name>Retriever  # Example: VespaRetr
 ```python
 Embeddings, Document
 ```
+
+Now that we have this data indexed(索引到) in a vectorstore, we will create a retrieval chain. <br>
+
+既然我们已经将这些数据索引到向量存储中，我们将创建一个检索链。<br>
+
+This chain will take an incoming question, look up relevant documents, then pass those documents along with the original question into an LLM and ask it to answer the original question.<br>
+
+该链将接收一个输入的问题，查找相关文档，然后将这些文档连同原始问题传递给一个LLM，并要求其回答原始问题。<br>
+
+First, let's set up the chain that takes a question and the retrieved documents and generates an answer.<br>
+
+首先，让我们设置一个链，该链接收一个问题和检索到的文档，并生成一个答案。<br>
+
+```python
+from langchain.chains.combine_documents import create_stuff_documents_chain
+
+prompt = ChatPromptTemplate.from_template("""Answer the following question based only on the provided context:
+
+<context>
+{context}
+</context>
+
+Question: {input}""")
+
+document_chain = create_stuff_documents_chain(llm, prompt)
+```
+
+If we wanted to, we could run this ourselves by passing in documents directly:<br>
+
+如果我们愿意的话，我们可以直接通过传入文档来自行运行这个过程。<br>
+
+```python
+from langchain_core.documents import Document
+
+document_chain.invoke({
+    "input": "how can langsmith help with testing?",
+    "context": [Document(page_content="langsmith can let you visualize test results")]
+})
+```
+
+However, we want the documents to first come from the retriever we just set up. That way, for a given question we can use the retriever to dynamically(动态的) select the most relevant documents and pass those in.<br>
+
+然而，我们希望文档首先来自我们刚刚设置的检索器。这样，对于给定的问题，我们可以使用检索器动态地选择最相关的文档并传递给模型。<br>
+
+```python
+from langchain.chains import create_retrieval_chain
+
+retriever = vector.as_retriever()
+retrieval_chain = create_retrieval_chain(retriever, document_chain)
+```
+
+We can now invoke this chain. This returns a dictionary - the response from the LLM is in the answer key.<br>
+
+我们现在可以调用这个链条了。这将返回一个字典 - LLM的响应位于 `answer` 键中。<br>
+
+```python
+response = retrieval_chain.invoke({"input": "how can langsmith help with testing?"})
+print(response["answer"])
+
+# LangSmith offers several features that can help with testing:...
+```
+
+请将下列内容翻译为地道的中文：
+
