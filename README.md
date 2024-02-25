@@ -16,6 +16,8 @@
     - [LangChain使用 | 操作符的原理:](#langchain使用--操作符的原理)
     - [Chain Debug:](#chain-debug)
     - [Retrieval Chain(检索链--查找并提取的过程):](#retrieval-chain检索链--查找并提取的过程)
+      - [何时使用检索链:](#何时使用检索链)
+      - [检索链完整代码:](#检索链完整代码)
 
 
 ## Quickstart(快速入门):
@@ -665,6 +667,8 @@ First we need to install the required packages for that:<br>
 pip install faiss-cpu
 ```
 
+> faiss向量库经过 `pip install faiss-cpu` 后就可以用，不需要额外安装。
+
 Then we can build our index:<br>
 
 然后我们可以构建我们的索引：<br>
@@ -773,5 +777,141 @@ print(response["answer"])
 
 This answer should be much more accurate!<br>
 
-这个答案应该更准确！
+这个答案应该更准确！<br>
 
+#### 何时使用检索链:
+
+LangChain 支持检索链的功能是为了在处理问题时提供更加丰富和准确的信息来源。检索链允许系统通过检索外部数据源来增强其回答的质量和准确性。你决定何时使用检索链而不是直接回复，可以基于以下几个考虑因素：<br>
+
+1. **问题的复杂性和特定性**：如果问题非常复杂或需要特定领域的深入知识，使用检索链可能会更好，因为它可以访问最新的或最相关的信息。
+
+2. **信息的时效性**：对于需要最新信息的问题（如新闻事件、最近的科学发现等），使用检索链可以帮助获取最新数据。
+
+3. **可用数据的限制**：如果问题涉及到的信息可能不包含在模型训练数据中，或者信息已经过时，那么使用检索链可以访问最新和最相关的外部资源。
+
+4. **精确度和可靠性的要求**：对于需要高度准确和可靠答案的情况（比如医疗、法律咨询等），检索链可以通过访问权威数据源来提供支持。
+
+5. **用户的偏好**：有时候，用户可能更倾向于获取经过验证的信息源提供的答案，而不是直接从模型生成的回答。
+
+6. **用户是否上传超大型文件**: 如果用户上传超大型文件，可以采用先对该文件切分、向量化并存储到向量库操作，后续调用检索链检索。
+
+在决定是否使用检索链时，还要考虑检索过程可能增加的时间延迟和资源消耗。直接回复通常更快，但可能不如检索链回复的信息全面或准确。<br>
+
+🚀🚀🚀 **最好的情况是，普通状态下让大模型直接回复，用户上传超大型文件(可以通过计算token判断)后采用检索链。** <br>
+
+总的来说，当面对需要高度专业知识、最新信息、或者对答案准确性和可靠性有高要求的问题时，使用检索链会是一个好选择。对于一般性的问题，直接回复可能更为高效和合适。<br>
+
+#### 检索链完整代码:
+
+```python
+"""
+@author:PeilongChen(peilongchencc@163.com)
+@description:实现基于LangChain的文档检索链。
+"""
+import os
+from dotenv import load_dotenv
+from langchain_community.document_loaders import TextLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from load_file_split_documents import ChineseRecursiveTextSplitter
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_openai import ChatOpenAI
+from langchain.chains import create_retrieval_chain
+
+# 加载环境变量
+dotenv_path = '.env.local'
+load_dotenv(dotenv_path=dotenv_path)
+
+# 设置网络代理环境变量
+os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+os.environ['https_proxy'] = 'http://127.0.0.1:7890'
+
+
+########################################################################
+# 文档切分，进行向量化，并存入FAISS
+########################################################################
+
+chunk_overlap = 50
+chunk_size = 500
+# 替换为你的文件路径
+filepath = 'example_data.txt'
+# 使用LangChain内置txt文件加载器
+loader = TextLoader(filepath)
+# 使用加载器加载文档
+docs = loader.load()    # 数据类型为list [(page_content='（一）直接打压式\n洗盘\n直接打压较多出现在 庄家 吸货区域，目的是... metadata={'source': 'example_data.txt'}' metadata={'source': 'example_data.txt'})]
+# 调用OpenAI的Embeddings API
+embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+# 实例化自定义的文本分割器
+text_splitter = ChineseRecursiveTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+# 进行文本分割
+documents = text_splitter.split_documents(docs)
+vector = FAISS.from_documents(documents, embeddings)
+
+########################################################################
+# 调用大模型(接口)，构建prompt
+########################################################################
+
+llm = ChatOpenAI(
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    # model_name="gpt-4-0125-preview"
+    )
+# 让模型 "仅根据提供的上下文回答以下问题"
+prompt = ChatPromptTemplate.from_template("""Answer the following question based only on the provided context:
+
+<context>
+{context}
+</context>
+
+Question: {input}""")
+
+document_chain = create_stuff_documents_chain(llm, prompt)  # "input" 和 "context" 参数会从 `.invoke()` 的参数中获取。
+
+########################################################################
+# 构建检索链
+########################################################################
+
+retriever = vector.as_retriever()
+retrieval_chain = create_retrieval_chain(retriever, document_chain)
+
+response = retrieval_chain.invoke({"input": "横盘整理的形态是什么样子?"})
+
+# print(response)
+
+print(response["answer"])
+
+# 由于结果含有随机性，笔者终端见到的2种回复如下:
+# 回复1: 横盘整理的形态在K线上的表现常常是一条横线或者长期的平台。
+# 回复2: 横盘整理的形态在K线上的表现常常是一条横线或者长期的平台，从成交量上来看，在平台整理的过程中成交量呈递减的状态。也就是说，在平台上没有或很少有成交量放出。成交清淡，成交价格也极度不活跃。
+```
+
+`invoke()`函数的内部解释如下:<br>
+
+```txt
+"""Transform a single input into an output. Override to implement.
+
+Args:
+    input: The input to the runnable.
+    config: A config to use when invoking the runnable.
+        The config supports standard keys like 'tags', 'metadata' for tracing
+        purposes, 'max_concurrency' for controlling how much work to do
+        in parallel, and other keys. Please refer to the RunnableConfig
+        for more details.
+
+Returns:
+    The output of the runnable.
+"""
+```
+
+意思是:<br>
+
+```txt
+将单一输入转换为输出。重写以实现。
+
+参数：
+- input：运行对象的输入。
+- config：调用运行对象时使用的配置。该配置支持如'tags'、'metadata'等标准键用于追踪目的，'max_concurrency'用于控制并行工作的量，以及其他键。请参阅RunnableConfig以获取更多详情。
+
+返回值：
+- 运行对象的输出。
+```
