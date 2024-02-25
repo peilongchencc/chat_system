@@ -70,7 +70,9 @@ retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
 response = retrieval_chain.invoke({"input": "横盘整理的形态是什么样子?"})
 
-# print(response)
+print(response)
+
+print()
 
 print(response["answer"])
 
