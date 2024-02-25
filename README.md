@@ -594,6 +594,8 @@ In order to properly(恰当的) answer the original(原始的) question ("how ca
 
 这可以通过检索来实现。当你有太多数据不能直接传递给 LLM 时，检索非常有用。你可以使用检索器只获取最相关的数据片段然后传入。<br>
 
+![](./materials/retrieval_resolve.jpg)
+
 In this process, we will look up(查询) relevant documents from a Retriever and then pass them into the prompt. A Retriever can be backed(可以依据...) by anything - a SQL table, the internet, etc - but in this instance(实例) we will populate(生活于；填充) a vector store and use that as a retriever. For more information on vectorstores, see this [documentation](https://python.langchain.com/docs/modules/data_connection/vectorstores).<br>
 
 在这个过程中，我们将从检索器中查找相关文档，然后将它们传入提示中。检索器可以由任何东西支持——一个 SQL 表，互联网等——但在这个例子中，我们将填充一个向量存储并使用它作为检索器。有关向量存储的更多信息，请参阅此文档。<br>
