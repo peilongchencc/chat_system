@@ -41,9 +41,6 @@ text_splitter = ChineseRecursiveTextSplitter(chunk_size=chunk_size, chunk_overla
 # 进行文本分割
 documents = text_splitter.split_documents(docs)
 
-
-class FAISS_With_L2(FAISS):
-
 vector = FAISS.from_documents(documents, embeddings)
 
 ########################################################################
@@ -70,10 +67,13 @@ document_chain = create_stuff_documents_chain(llm, prompt)  # "input" 和 "conte
 ########################################################################
 
 retriever = vector.as_retriever()
-
 retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
-response = retrieval_chain.invoke({"input": "横盘整理的形态是什么样子?"})   # L2 distance in float. Lower score represents more similarity.
+response = retrieval_chain.invoke({"input": "横盘整理的形态是什么样子?"})
+
+print(response)
+
+print()
 
 print(response["answer"])
 

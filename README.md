@@ -18,6 +18,7 @@
     - [Retrieval Chain(检索链--查找并提取的过程):](#retrieval-chain检索链--查找并提取的过程)
       - [何时使用检索链:](#何时使用检索链)
       - [检索链完整代码:](#检索链完整代码)
+      - [关于返回值的重要提醒:](#关于返回值的重要提醒)
 
 
 ## Quickstart(快速入门):
@@ -915,3 +916,192 @@ Returns:
 返回值：
 - 运行对象的输出。
 ```
+
+`as_retriever`的用法如下:<br>
+
+```python
+def as_retriever(self, **kwargs: Any) -> VectorStoreRetriever:
+    """Return VectorStoreRetriever initialized from this VectorStore.
+    Args:
+        search_type (Optional[str]): Defines the type of search that
+            the Retriever should perform.
+            Can be "similarity" (default), "mmr", or
+            "similarity_score_threshold".
+        search_kwargs (Optional[Dict]): Keyword arguments to pass to the
+            search function. Can include things like:
+                k: Amount of documents to return (Default: 4)
+                score_threshold: Minimum relevance threshold
+                    for similarity_score_threshold
+                fetch_k: Amount of documents to pass to MMR algorithm (Default: 20)
+                lambda_mult: Diversity of results returned by MMR;
+                    1 for minimum diversity and 0 for maximum. (Default: 0.5)
+                filter: Filter by document metadata
+
+    Returns:
+        VectorStoreRetriever: Retriever class for VectorStore.
+
+    Examples:
+
+    .. code-block:: python
+
+        # Retrieve more documents with higher diversity
+        # Useful if your dataset has many similar documents
+        docsearch.as_retriever(
+            search_type="mmr",
+            search_kwargs={'k': 6, 'lambda_mult': 0.25}
+        )
+
+        # Fetch more documents for the MMR algorithm to consider
+        # But only return the top 5
+        docsearch.as_retriever(
+            search_type="mmr",
+            search_kwargs={'k': 5, 'fetch_k': 50}
+        )
+
+        # Only retrieve documents that have a relevance score
+        # Above a certain threshold
+        docsearch.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={'score_threshold': 0.8}
+        )
+
+        # Only get the single most similar document from the dataset
+        docsearch.as_retriever(search_kwargs={'k': 1})
+
+        # Use a filter to only retrieve documents from a specific paper
+        docsearch.as_retriever(
+            search_kwargs={'filter': {'paper_title':'GPT-4 Technical Report'}}
+        )
+    """
+    tags = kwargs.pop("tags", None) or []
+    tags.extend(self._get_retriever_tags())
+    return VectorStoreRetriever(vectorstore=self, **kwargs, tags=tags)
+```
+
+#### 关于返回值的重要提醒:
+
+调用上述检索链代码时，是无法返回分数的(LangChain默认使用的L2欧氏距离)。如果你想返回分数，需要自己修改LangChain中的内容，相关代码如下:<br>
+
+```python
+class FAISS(VectorStore):
+    """`Meta Faiss` vector store.
+
+    To use, you must have the ``faiss`` python package installed.
+
+    Example:
+        .. code-block:: python
+
+            from langchain_community.embeddings.openai import OpenAIEmbeddings
+            from langchain_community.vectorstores import FAISS
+
+            embeddings = OpenAIEmbeddings()
+            texts = ["FAISS is an important library", "LangChain supports FAISS"]
+            faiss = FAISS.from_texts(texts, embeddings)
+
+    """
+
+    def __init__(
+        self,
+        embedding_function: Union[
+            Callable[[str], List[float]],
+            Embeddings,
+        ],
+        index: Any,
+        docstore: Docstore,
+        index_to_docstore_id: Dict[int, str],
+        relevance_score_fn: Optional[Callable[[float], float]] = None,
+        normalize_L2: bool = False,
+        distance_strategy: DistanceStrategy = DistanceStrategy.EUCLIDEAN_DISTANCE,
+    ):
+        """Initialize with necessary components."""
+        if not isinstance(embedding_function, Embeddings):
+            logger.warning(
+                "`embedding_function` is expected to be an Embeddings object, support "
+                "for passing in a function will soon be removed."
+            )
+        self.embedding_function = embedding_function
+        self.index = index
+        self.docstore = docstore
+        self.index_to_docstore_id = index_to_docstore_id
+        self.distance_strategy = distance_strategy
+        self.override_relevance_score_fn = relevance_score_fn
+        self._normalize_L2 = normalize_L2
+        if (
+            self.distance_strategy != DistanceStrategy.EUCLIDEAN_DISTANCE
+            and self._normalize_L2
+        ):
+            warnings.warn(
+                "Normalizing L2 is not applicable for metric type: {strategy}".format(
+                    strategy=self.distance_strategy
+                )
+            )
+
+    # 其他代码省略
+
+    def similarity_search(
+        self,
+        query: str,
+        k: int = 4,
+        filter: Optional[Union[Callable, Dict[str, Any]]] = None,
+        fetch_k: int = 20,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """Return docs most similar to query.
+
+        Args:
+            query: Text to look up documents similar to.
+            k: Number of Documents to return. Defaults to 4.
+            filter: (Optional[Dict[str, str]]): Filter by metadata. Defaults to None.
+            fetch_k: (Optional[int]) Number of Documents to fetch before filtering.
+                      Defaults to 20.
+
+        Returns:
+            List of Documents most similar to the query.
+        """
+        docs_and_scores = self.similarity_search_with_score(
+            query, k, filter=filter, fetch_k=fetch_k, **kwargs
+        )
+        return [doc for doc, _ in docs_and_scores]
+```
+
+具体的文件路径类似如下:<br>
+
+```bash
+/root/anaconda3/envs/langchain/lib/python3.10/site-packages/langchain_community/vectorstores/faiss.py
+```
+
+由上述代码可以看出，`FAISS` 类中函数 `similarity_search` 的返回值只返回了文档doc。如果你想修改返回值，可以从这里下手。<br>
+
+也可采用下列方式继承 `FAISS` 类，重写函数 `similarity_search`:<br>
+
+```python
+class ExtendedFAISS(FAISS):
+    def similarity_search(
+        self,
+        query: str,
+        k: int = 4,
+        filter: Optional[Union[Callable, Dict[str, Any]]] = None,
+        fetch_k: int = 20,
+        **kwargs: Any,
+    ) -> List[Tuple[Document, float]]:
+        """
+        重写similarity_search方法以返回文档及其分数。
+
+        参数:
+            query: 要查找相似文档的文本。
+            k: 返回的文档数量，默认为4。
+            filter: 可选的，通过元数据过滤，默认为None。
+            fetch_k: 可选的，在过滤前获取的文档数量，默认为20。
+            **kwargs: 额外的关键字参数。
+
+        返回:
+            一个元组列表，每个元组包含一个文档和其L2距离分数。
+            分数越低表示相似度越高。
+        """
+        # 调用现有的similarity_search_with_score方法获取文档及其分数。
+        return self.similarity_search_with_score(
+            query, k, filter=filter, fetch_k=fetch_k, **kwargs
+        )
+```
+
+🚨🚨🚨注意: **这两种方式都需要考虑数据的传递，需要你自己debug后续代码，保证程序正常运行、文档得分可以正常返回。** <br>

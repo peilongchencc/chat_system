@@ -40,10 +40,6 @@ embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 text_splitter = ChineseRecursiveTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 # 进行文本分割
 documents = text_splitter.split_documents(docs)
-
-
-class FAISS_With_L2(FAISS):
-
 vector = FAISS.from_documents(documents, embeddings)
 
 ########################################################################
