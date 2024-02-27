@@ -19,6 +19,14 @@
       - [何时使用检索链:](#何时使用检索链)
       - [检索链完整代码:](#检索链完整代码)
       - [关于返回值的重要提醒:](#关于返回值的重要提醒)
+      - [Diving Deeper(深入了解):](#diving-deeper深入了解)
+    - [Conversation Retrieval Chain(对话检索链):](#conversation-retrieval-chain对话检索链)
+      - [Updating Retrieval(更新检索):](#updating-retrieval更新检索)
+      - [测试代码如下:](#测试代码如下)
+      - [对话检索链完整代码:](#对话检索链完整代码)
+      - [特别注意:](#特别注意)
+    - [Agent(代理):](#agent代理)
+    - [Agent 完整代码示例:](#agent-完整代码示例)
 
 
 ## Quickstart(快速入门):
@@ -1105,3 +1113,445 @@ class ExtendedFAISS(FAISS):
 ```
 
 🚨🚨🚨注意: **这两种方式都需要考虑数据的传递，需要你自己debug后续代码，保证程序正常运行、文档得分可以正常返回。** <br>
+
+#### Diving Deeper(深入了解):
+
+We've now successfully set up a basic retrieval chain. We only touched on the basics of retrieval - for a deeper dive into everything mentioned here, see [this section of documentation.](https://python.langchain.com/docs/modules/data_connection)<br>
+
+我们已经成功建立了一个基本的检索链。我们只是简单介绍了检索的基础知识 - 欲深入了解本文中提到的所有内容，请参阅文档中的这一部分。<br>
+
+
+### Conversation Retrieval Chain(对话检索链):
+
+The chain we've created so far can only answer single questions. One of the main types of LLM applications that people are building are chat bots. So how do we turn this chain into one that **can answer follow up questions?** <br>
+
+到目前为止，我们创建的链只能回答单个问题。人们正在构建的LLM应用的主要类型之一是聊天机器人。那么，我们如何将这个链转变为一个可以 **回答后续问题的链呢？** <br>
+
+We can still use the `create_retrieval_chain` function, but we need to change two things:<br>
+
+我们仍然可以使用 `create_retrieval_chain` 函数，但我们需要改变两件事：<br>
+
+1. The retrieval method should now not just work on the most recent input, but rather should take the whole history into account.(检索方法现在不仅仅应该在最近的输入上工作，而是应该考虑整个历史记录。)
+
+2. The final LLM chain should likewise(adv. 同样地) take the whole history into account.(最终的LLM链同样应该考虑整个历史记录。)
+
+> 在这个上下文中，“account”并不是指“账户”的意思，而是指“考虑到；将...纳入考虑范围”的意思。换句话说，将整个历史记录考虑在内，将其纳入到相关处理或决策中。
+
+#### Updating Retrieval(更新检索):
+
+In order to update retrieval, we will create a new chain. This chain will take in the most recent input (`input`) and the conversation history (`chat_history`) and use an LLM to generate a search query.<br>
+
+为了更新检索，我们将创建一个新的链。这个链将接收最近的输入（`input`）和对话历史记录（`chat_history`），并使用LLM生成一个搜索查询。<br>
+
+```python
+from langchain.chains import create_history_aware_retriever
+from langchain_core.prompts import MessagesPlaceholder
+
+# First we need a prompt that we can pass into an LLM to generate this search query
+# 首先，我们需要一个可以传递给大型语言模型（LLM）以生成这个搜索查询的提示(prompt)。
+
+prompt = ChatPromptTemplate.from_messages([
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("user", "{input}"),
+    ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+])
+
+# Given the above conversation, generate a search query to look up in order to get information relevant to the conversation
+# 根据以上对话，生成一个搜索查询以获取与对话相关的信息
+
+retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
+```
+
+We can test this out by passing in an instance where the user is asking a follow up question.<br>
+
+我们可以通过提供一个用户正在询问后续问题的实例来进行测试。<br>
+
+```python
+from langchain_core.messages import HumanMessage, AIMessage
+
+chat_history = [HumanMessage(content="Can LangSmith help test my LLM applications?"), AIMessage(content="Yes!")]
+retriever_chain.invoke({
+    "chat_history": chat_history,
+    "input": "Tell me how"
+})
+```
+
+You should see that this returns documents about testing in LangSmith. This is because the LLM generated a new query, combining the chat history with the follow up question.<br>
+
+你应该会看到，这将返回 "关于在LangSmith进行测试" 的文件(数据类型类似 `Document(page_content='横盘整理)` )。这是因为LLM生成了一个新的查询，将聊天记录与后续问题结合起来。<br>
+
+#### 测试代码如下:
+
+```python
+"""
+@author:PeilongChen(peilongchencc@163.com)
+@description:实现基于LangChain的文档检索链。
+"""
+import os
+from dotenv import load_dotenv
+from langchain_community.document_loaders import TextLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from load_file_split_documents import ChineseRecursiveTextSplitter
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_openai import ChatOpenAI
+from langchain.chains import create_retrieval_chain
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain.chains import create_history_aware_retriever
+from langchain_core.prompts import MessagesPlaceholder
+
+# 加载环境变量
+dotenv_path = '.env.local'
+load_dotenv(dotenv_path=dotenv_path)
+
+# 设置网络代理环境变量
+os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+os.environ['https_proxy'] = 'http://127.0.0.1:7890'
+
+
+########################################################################
+# 文档切分，进行向量化，并存入FAISS
+########################################################################
+
+chunk_overlap = 50
+chunk_size = 500
+# 替换为你的文件路径
+filepath = 'example_data.txt'
+# 使用LangChain内置txt文件加载器
+loader = TextLoader(filepath)
+# 使用加载器加载文档
+docs = loader.load()    # 数据类型为list [(page_content='（一）直接打压式\n洗盘\n直接打压较多出现在 庄家 吸货区域，目的是... metadata={'source': 'example_data.txt'}' metadata={'source': 'example_data.txt'})]
+# 调用OpenAI的Embeddings API
+embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+# 实例化自定义的文本分割器
+text_splitter = ChineseRecursiveTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+# 进行文本分割
+documents = text_splitter.split_documents(docs)
+vector = FAISS.from_documents(documents, embeddings)
+
+########################################################################
+# 调用大模型(接口)，构建prompt
+########################################################################
+
+llm = ChatOpenAI(
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    # model_name="gpt-4-0125-preview"
+    )
+
+prompt = ChatPromptTemplate.from_messages([
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("user", "{input}"),
+    ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+])
+
+chat_history = [HumanMessage(content="横盘整理的形态是什么样子?"), AIMessage(content="Yes!")]
+
+########################################################################
+# 构建检索链
+########################################################################
+
+retriever = vector.as_retriever()
+
+retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
+
+response = retriever_chain.invoke({
+    "chat_history": chat_history,
+    "input": "为什么会出现这种情况呢？"
+})
+
+for each_res in response:
+    print(each_res.page_content)    # 相关文档的具体内容
+```
+
+Now that we have this new retriever, we can create a new chain to continue the conversation with these retrieved documents in mind.<br>
+
+现在我们有了这个新的检索器，我们可以创建一个新的链，继续考虑这些检索到的文件来继续对话。<br>
+
+```python
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "Answer the user's questions based on the below context:\n\n{context}"),
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("user", "{input}"),
+])
+document_chain = create_stuff_documents_chain(llm, prompt)
+
+retrieval_chain = create_retrieval_chain(retriever_chain, document_chain)
+```
+
+We can now test this out end-to-end:<br>
+
+现在我们可以进行端到端的测试：<br>
+
+```python
+chat_history = [HumanMessage(content="Can LangSmith help test my LLM applications?"), AIMessage(content="Yes!")]
+retrieval_chain.invoke({
+    "chat_history": chat_history,
+    "input": "Tell me how"
+})
+```
+
+We can see that this gives a coherent answer - we've successfully turned our retrieval chain into a chatbot!<br>
+
+我们可以看到这提供了一个连贯的答案 - 我们成功地将我们的检索链转化为了一个聊天机器人！<br>
+
+#### 对话检索链完整代码:
+
+```python
+"""
+@author:PeilongChen(peilongchencc@163.com)
+@description:实现基于LangChain的文档检索链。
+"""
+import os
+from dotenv import load_dotenv
+from langchain_community.document_loaders import TextLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from load_file_split_documents import ChineseRecursiveTextSplitter
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_openai import ChatOpenAI
+from langchain.chains import create_retrieval_chain
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain.chains import create_history_aware_retriever
+from langchain_core.prompts import MessagesPlaceholder
+
+# 加载环境变量
+dotenv_path = '.env.local'
+load_dotenv(dotenv_path=dotenv_path)
+
+# 设置网络代理环境变量
+os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+os.environ['https_proxy'] = 'http://127.0.0.1:7890'
+
+
+########################################################################
+# 文档切分，进行向量化，并存入FAISS
+########################################################################
+
+chunk_overlap = 50
+chunk_size = 500
+# 替换为你的文件路径
+filepath = 'example_data.txt'
+# 使用LangChain内置txt文件加载器
+loader = TextLoader(filepath)
+# 使用加载器加载文档
+docs = loader.load()    # 数据类型为list [(page_content='（一）直接打压式\n洗盘\n直接打压较多出现在 庄家 吸货区域，目的是... metadata={'source': 'example_data.txt'}' metadata={'source': 'example_data.txt'})]
+# 调用OpenAI的Embeddings API
+embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+# 实例化自定义的文本分割器
+text_splitter = ChineseRecursiveTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+# 进行文本分割
+documents = text_splitter.split_documents(docs)
+vector = FAISS.from_documents(documents, embeddings)
+retriever = vector.as_retriever()
+
+########################################################################
+# 调用大模型(接口)，构建prompt
+########################################################################
+
+llm = ChatOpenAI(
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    # model_name="gpt-4-0125-preview"
+    )
+
+########################################################################
+# 第一次调用llm，将多轮对话中当前问句的信息补充完整(如果当前问句缺少信息的话，例如缺主语等等。)
+########################################################################
+
+prompt = ChatPromptTemplate.from_messages([
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("user", "{input}"),
+    ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+])
+# 构建检索器链, "create history aware retriever" 表示创建一个具有历史意识的检索器,aware表示意识到或知道某种情况。
+retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
+
+########################################################################
+# 第二次调用llm，利用刚刚生成的含完整信息的问句从文档中检索需要的内容
+########################################################################
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "Answer the user's questions based on the below context:\n\n{context}"),
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("user", "{input}"),
+])
+document_chain = create_stuff_documents_chain(llm, prompt)
+# 构建检索链
+retrieval_chain = create_retrieval_chain(retriever_chain, document_chain)
+
+chat_history_content = "横盘整理的形态是什么样子?"
+chat_history = [HumanMessage(content=chat_history_content), AIMessage(content="Yes!")]
+
+response = retrieval_chain.invoke({
+    "chat_history": chat_history,
+    "input": "为什么会出现这种情况呢？"
+})
+
+print(response["answer"])
+
+# 终端输出:
+# 这种情况出现的原因是主力在股价上升到敏感价位或者市场背景有所转换时，会适时抛出一部分筹码，打压住股价的上升趋势，形成平台整理的格局。在这个阶段内，成交量稍显活跃，一旦平台整理格局形成，成交量会迅速萎缩。
+
+# 原文:
+# 横盘整理的形态在K线上的表现常常是一条横线或者长期的平台，从成交量上来看，在平台整理的过程中成交量呈递减的状态。也就是说，在平台上没有或很少有成交量放出。成交清淡，成交价格也极度不活跃。为什么会出现这种情况呢？其内在的机理就是：当股价上升到敏感价位或浮码涌动亦或市场背景有所转换的时候，主力会适时抛出一部分筹码，打压住股价的升势，用一部分资金顶住获利抛盘，强制股价形成平台整理的格局，在这个阶段内，成交量稍显活跃，一旦平台整理格局形成，成交量应迅速地萎缩下来。主力一般会让散户投资者和小资金持有者所持筹码在平台内充分自由换手，只是在大势不好股价下滑的情况下，适时控制股价下跌的冲动。此阶段时间内的成交量由于主力活动极少，成交量应该是清淡的。
+```
+
+#### 特别注意:
+
+对话检索链虽然解决了上下文关联问题，但 **LangChain内部没有关于 "历史对话数据(`chat_history_content`)" 最大长度的处理逻辑** 💢💢💢。<br>
+
+经测试，当 `chat_history_content` 过大时，虽然下列代码可以正常运行，例如:<br>
+
+```python
+# 大型问答语料数据
+file_path = "financial_data.txt"
+
+with open(file_path, "r") as file:
+    chat_history_content = file.read()
+
+chat_history = [HumanMessage(content=chat_history_content), AIMessage(content="Yes!")]
+```
+
+但当运行下列代码时报错:<br>
+
+```python
+response = retrieval_chain.invoke({
+    "chat_history": chat_history,
+    "input": "可转债具备债性吗？"
+})
+```
+
+终端提示:<br>
+
+```txt
+openai.BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 16385 tokens. However, your messages resulted in 185680 tokens. Please reduce the length of the messages.", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}
+```
+
+示意图如下:<br>
+
+![](./materials/exceed_max_length.jpg)
+
+
+### Agent(代理):
+
+We've so far create examples of chains - where each step is known ahead of time. The final thing we will create is an agent - where the LLM decides what steps to take.<br>
+
+到目前为止我们已经创建了链式示例——其中每一步都是预先知道的。我们接下来要创建的是一个代理——由LLM决定要采取什么步骤。<br>
+
+**NOTE: for this example we will only show how to create an agent using OpenAI models, as local models are not reliable enough yet.** <br>
+
+**注意：对于这个示例，我们只会展示如何使用OpenAI模型来创建一个代理，因为本地模型目前还不够可靠。** <br>
+
+One of the first things to do when building an agent is to decide what tools it should have access to. For this example, we will give the agent access to two tools:<br>
+
+构建一个代理的第一步是决定它应该有权访问哪些工具。对于这个示例，我们将给代理访问两个工具的权限：<br>
+
+1. The retriever we just created. This will let it easily answer questions about LangSmith.(我们刚刚创建的检索器。这将使它能够轻松回答关于LangSmith的问题。)
+
+2. A search tool. This will let it easily answer questions that require up to date information.(一个搜索工具。这将使它能够轻松回答需要最新信息的问题。)
+
+> up to date: 最新的
+
+First, let's set up(设置) a tool for the retriever we just created:<br>
+
+首先，让我们为我们刚刚创建的检索器设置一个工具：<br>
+
+```python
+from langchain.tools.retriever import create_retriever_tool
+
+retriever_tool = create_retriever_tool(
+    retriever,
+    "langsmith_search",
+    "Search for information about LangSmith. For any questions about LangSmith, you must use this tool!",
+)
+# 原文: "Search for information about LangSmith. For any questions about LangSmith, you must use this tool!"
+# 翻译: "搜索关于LangSmith的信息。对于任何关于LangSmith的问题，你必须使用这个工具！"
+```
+
+The search tool that we will use is [Tavily](https://python.langchain.com/docs/integrations/retrievers/tavily). This will require an API key (they have generous free tier). After creating it on their platform, you need to set it as an environment variable:<br>
+
+我们将使用的搜索工具是 Tavily。这将需要一个 API 密钥（他们提供慷慨的免费套餐）。在他们的平台上创建之后，你需要将其设置为环境变量：<br>
+
+```bash
+export TAVILY_API_KEY=...
+```
+
+If you do not want to set up an API key, you can skip creating this tool.<br>
+
+如果你不想设置 API 密钥，你可以跳过创建这个工具。<br>
+
+> 因为构建的 tools 是一个列表，少一项也没有关系。
+
+```python
+from langchain_community.tools.tavily_search import TavilySearchResults
+
+search = TavilySearchResults()
+```
+
+We can now create a list of the tools we want to work with:<br>
+
+我们现在可以列出我们想要使用的工具：<br>
+
+```python
+tools = [retriever_tool, search]
+```
+
+Now that we have the tools, we can create an agent to use them. We will go over this pretty quickly - for a deeper dive into what exactly is going on, check out the [Agent's Getting Started documentation](https://python.langchain.com/docs/modules/agents)<br>
+
+既然我们已经有了工具，我们可以创建一个代理来使用它们。我们会很快地讲解这一点 - 如果想深入了解正在发生的事情，请查阅代理的入门文档。<br>
+
+Install langchain hub first(首先安装 Langchain Hub):<br>
+
+```bash
+pip install langchainhub
+```
+
+Now we can use it to get a predefined prompt:<br>
+
+现在我们可以使用它来获取一个预定义的提示:<br>
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain import hub
+from langchain.agents import create_openai_functions_agent
+from langchain.agents import AgentExecutor
+
+# Get the prompt to use - you can modify this!
+prompt = hub.pull("hwchase17/openai-functions-agent")
+llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+```
+
+We can now invoke the agent and see how it responds! We can ask it questions about LangSmith:<br>
+
+现在我们可以调用代理并查看它的响应！我们可以问它关于 LangSmith 的问题：<br>
+
+```python
+agent_executor.invoke({"input": "how can langsmith help with testing?"})
+```
+
+We can ask it about the weather:<br>
+
+我们可以问它关于天气的问题:<br>
+
+```python
+agent_executor.invoke({"input": "what is the weather in SF?"})
+```
+
+We can have conversations with it:<br>
+
+我们可以与它进行对话:<br>
+
+```python
+chat_history = [HumanMessage(content="Can LangSmith help test my LLM applications?"), AIMessage(content="Yes!")]
+agent_executor.invoke({
+    "chat_history": chat_history,
+    "input": "Tell me how"
+})
+```
+
+### Agent 完整代码示例:
+
+暂无，笔者先去研究下Agent的具体逻辑。<br>
