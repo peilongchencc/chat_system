@@ -280,17 +280,20 @@ There are several key concepts to understand when building agents: Agents, Agent
 
 构建代理时有几个关键概念需要理解：代理、代理执行器、工具和工具包。要深入了解，请查看这个概念指南。<br>
 
+
 ## Agent Types(代理类型):
 
 There are many different types of agents to use. For a overview of the different types and when to use them, please check out [this section](https://python.langchain.com/docs/modules/agents/agent_types/).<br>
 
 有许多不同类型的代理可供使用。要了解不同类型(的代理)及其使用时机，请查看本节。<br>
 
+
 ## Tools(工具):
 
 Agents are only as good as the tools they have. For a comprehensive(全面的) guide on tools, please see [this section](https://python.langchain.com/docs/modules/agents/tools/).<br>
 
 代理的好坏取决于它们拥有的工具。要获得关于工具的全面指南，请参阅本节。<br>
+
 
 ## How To Guides(操作指南):
 
