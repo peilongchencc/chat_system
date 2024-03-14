@@ -27,6 +27,10 @@
       - [特别注意:](#特别注意)
     - [Agent(代理):](#agent代理)
     - [Agent 完整代码示例:](#agent-完整代码示例)
+  - [Document loaders:](#document-loaders)
+    - [PDF:](#pdf)
+      - [Using PyPDF:](#using-pypdf)
+    - [Extracting images(提取图像):](#extracting-images提取图像)
 
 
 ## Quickstart(快速入门):
@@ -1555,3 +1559,109 @@ agent_executor.invoke({
 ### Agent 完整代码示例:
 
 暂无，笔者先去研究下Agent的具体逻辑。<br>
+
+
+## Document loaders:
+
+### PDF:
+
+Portable(便携式) Document Format (PDF), standardized(标准化) as ISO 32000, is a file format developed by Adobe in 1992 to present(展示;呈现) documents, including text formatting and images, in a manner independent(独立的;无关的) of application software(应用软件), hardware(硬件), and operating systems(操作系统).<br>
+
+便携式文档格式（PDF），标准化为ISO 32000，是由Adobe于1992年开发的文件格式，用于以与应用软件、硬件和操作系统无关的方式呈现文档，包括文本格式和图像。<br>
+
+This covers how to load PDF documents into the Document format that we use downstream.<br>
+
+这(部分内容)涵盖了如何将PDF文档加载到我们下游使用的文档格式中。<br>
+
+#### Using PyPDF:
+
+Load PDF using `pypdf` into array of documents, where each document contains the page content and metadata with page number.<br>
+
+使用 `pypdf` 将 PDF 加载为文档数组，其中每个文档包含页面内容和带有页码的元数据。<br>
+
+```bash
+pip install pypdf
+```
+
+```python
+from langchain_community.document_loaders import PyPDFLoader
+
+loader = PyPDFLoader("example_data/layout-parser-paper.pdf")
+pages = loader.load_and_split()
+print(pages[0])
+
+# 终端输出:
+# Document(page_content='LayoutParser : A Uni\x0ced Toolkit for Deep\nLearning Based Document Image Analysis\nZejiang Shen1( \x00), Ruochen Zhang2, Melissa Dell3, Benjamin Charles Germain\nLee4, Jacob Carlson3, and Weining Li5\n1Allen Institute for AI\nshannons@allenai.org\n2Brown University\nruochen zhang@brown.edu\n3Harvard University\nfmelissadell,jacob carlson g@fas.harvard.edu\n4University of Washington\nbcgl@cs.washington.edu\n5University of Waterloo\nw422li@uwaterloo.ca\nAbstract. Recent advances in document image analysis (DIA) have been\nprimarily driven by the application of neural networks. Ideally, research\noutcomes could be easily deployed in production and extended for further\ninvestigation. However, various factors like loosely organized codebases\nand sophisticated model con\x0cgurations complicate the easy reuse of im-\nportant innovations by a wide audience. Though there have been on-going\ne\x0borts to improve reusability and simplify deep learning (DL) model\ndevelopment in disciplines like natural language processing and computer\nvision, none of them are optimized for challenges in the domain of DIA.\nThis represents a major gap in the existing toolkit, as DIA is central to\nacademic research across a wide range of disciplines in the social sciences\nand humanities. This paper introduces LayoutParser , an open-source\nlibrary for streamlining the usage of DL in DIA research and applica-\ntions. The core LayoutParser library comes with a set of simple and\nintuitive interfaces for applying and customizing DL models for layout de-\ntection, character recognition, and many other document processing tasks.\nTo promote extensibility, LayoutParser also incorporates a community\nplatform for sharing both pre-trained models and full document digiti-\nzation pipelines. We demonstrate that LayoutParser is helpful for both\nlightweight and large-scale digitization pipelines in real-word use cases.\nThe library is publicly available at https://layout-parser.github.io .\nKeywords: Document Image Analysis ·Deep Learning ·Layout Analysis\n·Character Recognition ·Open Source library ·Toolkit.\n1 Introduction\nDeep Learning(DL)-based approaches are the state-of-the-art for a wide range of\ndocument image analysis (DIA) tasks including document image classi\x0ccation [ 11,arXiv:2103.15348v2  [cs.CV]  21 Jun 2021', metadata={'source': 'example_data/layout-parser-paper.pdf', 'page': 0})
+```
+
+经测试,上述代码可以正确读取双栏形式的PDF，完整版代码可参考 `example_code/parse_pdf_with_langchain.py` 文件。<br>
+
+🔥🔥🔥An advantage of this approach is that documents can be retrieved with page numbers.<br>
+
+🔥🔥🔥这种方法的一个优势是可以根据页码检索文档。<br>
+
+We want to use `OpenAIEmbeddings` so we have to get the OpenAI API Key.<br>
+
+我们想要使用 `OpenAIEmbeddings`，所以我们必须获取 OpenAI API 密钥。<br>
+
+```python
+import os
+import getpass
+
+os.environ['OPENAI_API_KEY'] = getpass.getpass('OpenAI API Key:')
+# OpenAI API Key: ········
+
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+
+faiss_index = FAISS.from_documents(pages, OpenAIEmbeddings())
+docs = faiss_index.similarity_search("How will the community be engaged?", k=2) # 社区将如何参与？
+for doc in docs:
+    print(str(doc.metadata["page"]) + ":", doc.page_content[:300])
+```
+
+终端输出如下:<br>
+
+```txt
+9: 10 Z. Shen et al.
+Fig. 4: Illustration of (a) the original historical Japanese document with layout
+detection results and (b) a recreated version of the document image that achieves
+much better character recognition recall. The reorganization algorithm rearranges
+the tokens based on the their detect
+3: 4 Z. Shen et al.
+Efficient Data AnnotationC u s t o m i z e d  M o d e l  T r a i n i n gModel Cust omizationDI A Model HubDI A Pipeline SharingCommunity PlatformLa y out Detection ModelsDocument Images
+T h e  C o r e  L a y o u t P a r s e r  L i b r a r yOCR ModuleSt or age & VisualizationLa y ou
+```
+
+中文含义:<br>
+
+```txt
+9:10 沈等人
+图4：（a）原始历史日文文档及其布局检测结果的示意图；（b）重新创建的文档图像，实现了更好的字符识别召回率。重新组织算法基于它们的检测结果重新排列令牌。
+3:4 沈等人
+高效数据标注自定义模型训练模型定制DIA模型中心DIA管道共享社区平台布局检测模型文档图像核心布局解析库OCR模块存储与可视化布局
+```
+
+### Extracting images(提取图像):
+
+Using the `rapidocr-onnxruntime` package we can extract images as text as well:<br>
+
+利用 `rapidocr-onnxruntime` 包，我们也可以将图像提取为文本：<br>
+
+```bash
+pip install rapidocr-onnxruntime
+```
+
+```python
+from langchain_community.document_loaders import PyPDFLoader
+
+loader = PyPDFLoader("example_data/LayoutParser_基于深度学习的文档图像分析的统一工具包.pdf", extract_images=True)
+pages = loader.load()
+print(pages[3].page_content)    # The page index starts counting from 0.
+```
+
+原图及识别效果如下:<br>
+
+![](./materials/parse_result_pdf_contain_images.jpg)
+
+🚨🚨🚨注意:由于图片的格式多样，提取出的内容的排版可能不是你期望的样子，这部分代码只能作为通用版使用。针对自己的任务，可能需要专门设计一个OCR模块。<br>
