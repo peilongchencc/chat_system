@@ -31,6 +31,12 @@
     - [PDF:](#pdf)
       - [Using PyPDF:](#using-pypdf)
     - [Extracting images(提取图像):](#extracting-images提取图像)
+    - [Using MathPix:](#using-mathpix)
+    - [Using Unstructured:](#using-unstructured)
+      - [ModuleNotFoundError: No module named 'pdf2image':](#modulenotfounderror-no-module-named-pdf2image)
+      - [ModuleNotFoundError: No module named 'pdfminer':](#modulenotfounderror-no-module-named-pdfminer)
+      - [ModuleNotFoundError: No module named 'pillow\_heif':](#modulenotfounderror-no-module-named-pillow_heif)
+      - [ModuleNotFoundError: No module named 'unstructured\_inference':](#modulenotfounderror-no-module-named-unstructured_inference)
 
 
 ## Quickstart(快速入门):
@@ -1665,3 +1671,139 @@ print(pages[3].page_content)    # The page index starts counting from 0.
 ![](./materials/parse_result_pdf_contain_images.jpg)
 
 🚨🚨🚨注意:由于图片的格式多样，提取出的内容的排版可能不是你期望的样子，这部分代码只能作为通用版使用。针对自己的任务，可能需要专门设计一个OCR模块。<br>
+
+请将下列内容翻译为地道的中文：
+
+### Using MathPix:
+
+Inspired by Daniel Gross's(受...启发) https://gist.github.com/danielgross/3ab4104e14faccc12b49200843adab21 <br>
+
+```python
+from langchain_community.document_loaders import MathpixPDFLoader
+loader = MathpixPDFLoader("example_data/LayoutParser_基于深度学习的文档图像分析的统一工具包.pdf")   # 官网的"example_data/layout-parser-paper.pdf"就是笔者当前使用的文件；
+data = loader.load()
+print(data) # 笔者没有测试，笔者没有注册Mathpix。
+```
+
+MathPix 是一款能够识别和解析数学公式的软件工具，特别适用于学生、教师和科研人员等需要处理复杂数学公式的用户。<br>
+
+MathPix 会使用其高级的OCR（Optical Character Recognition，光学字符识别）技术来识别图片中的数学公式，并将其转换成可编辑的文本格式，比如 LaTeX 或 Markdown 等。这一过程不仅提高了输入复杂数学公式的效率，也极大地简化了在数字文档中使用和共享这些公式的过程。MathPix 支持多种数学符号和表达式的识别，包括积分、导数、矩阵、极限等，是学术写作和科研工作中的一个有用工具。<br>
+
+⚠️⚠️⚠️注意: 使用Mathpix需要先有`MATHPIX_API_KEY`，并将`MATHPIX_API_KEY`添加到环境变量。<br>
+
+### Using Unstructured:
+
+❌❌❌官网示例--无法运行:<br>
+
+```python
+from langchain_community.document_loaders import UnstructuredPDFLoader
+loader = UnstructuredPDFLoader("example_data/layout-parser-paper.pdf")
+data = loader.load()
+print(data)
+```
+
+点击`UnstructuredPDFLoader`跳转后得到的代码示例:<br>
+
+```python
+
+```
+
+依赖项安装:<br>
+
+```bash
+pip install pdf2image, pdfminer.six, pillow_heif
+```
+
+#### ModuleNotFoundError: No module named 'pdf2image':
+
+这个错误信息表明你的Python环境中没有安装`pdf2image`这个模块。`pdf2image`是一个库，用于将PDF文件转换成图像。这个库非常有用，尤其是在需要对PDF文件进行视觉处理时。<br>
+
+要解决这个问题，你需要安装`pdf2image`模块。你可以使用pip来安装它，pip是Python的包管理工具。<br>
+
+打开你的命令行工具（在Windows上是命令提示符或PowerShell，在MacOS或Linux上是终端），然后运行以下命令来安装`pdf2image`：<br>
+
+```sh
+pip install pdf2image
+```
+
+安装`pdf2image`之前，请确保你的系统上已经安装了Poppler。`pdf2image`依赖于Poppler这个工具，Poppler是一个PDF渲染库，用于支持PDF转换成图像的过程。如果你没有安装Poppler，`pdf2image`将无法正常工作。<br>
+
+- 在**Linux**上，你可以通过包管理器安装Poppler。例如，在Ubuntu或Debian上，你可以使用以下命令安装：<br>
+
+```sh
+sudo apt-get install poppler-utils
+```
+
+- 在**MacOS**上，你可以使用Homebrew来安装Poppler：
+
+```sh
+brew install poppler
+```
+
+- 在**Windows**上，安装Poppler可能稍微复杂一些，因为你需要下载Poppler的二进制文件并将其添加到系统的PATH环境变量中。你可以从[Poppler的官方页面](https://poppler.freedesktop.org/)或其他可信的源下载Windows版本的Poppler。
+
+安装完成后，再次运行你的代码，看看问题是否解决。<br>
+
+#### ModuleNotFoundError: No module named 'pdfminer':
+
+这个错误信息表明你的Python环境中没有安装`pdfminer`这个模块。`pdfminer`是一个用于从PDF文档中提取信息的工具，它可以解析PDF文本、图表和元数据。<br>
+
+要解决这个问题，你需要安装`pdfminer`模块。如果你使用的是Python 3，那么应该安装`pdfminer.six`，这是`pdfminer`的一个分支，专门为Python 3更新和维护。你可以使用pip来安装它，pip是Python的包管理工具。<br>
+
+打开你的命令行工具（在Windows上是命令提示符或PowerShell，在MacOS或Linux上是终端），然后运行以下命令来安装`pdfminer.six`：<br>
+
+```sh
+pip install pdfminer.six
+```
+
+如果你已经安装了`pdfminer.six`但仍然遇到这个错误，可能是因为你的脚本运行在一个没有安装该模块的环境中。确保你的脚本运行在正确的Python环境中，特别是如果你使用了虚拟环境的话。<br>
+
+如果你使用的是另一个版本的`pdfminer`或有特定的安装需求，可能需要调整安装命令。例如，如果你确实需要原始的`pdfminer`（适用于Python 2），你可以尝试安装它（尽管不推荐使用Python 2，因为它已经不再获得官方支持）：<br>
+
+```sh
+pip install pdfminer
+```
+
+安装完成后，再次运行你的代码，看看问题是否解决。<br>
+
+#### ModuleNotFoundError: No module named 'pillow_heif':
+
+这个错误信息表明你的Python环境中没有安装`pillow_heif`这个模块。`pillow_heif`是一个处理HEIF（High Efficiency Image File Format，高效率图像文件格式）图片的库，它依赖于Pillow，Pillow是Python中一个广泛使用的图像处理库。<br>
+
+要解决这个问题，你需要安装`pillow_heif`模块。你可以使用pip来安装它，pip是Python的包管理工具。<br>
+
+打开你的命令行工具（在Windows上是命令提示符或PowerShell，在MacOS或Linux上是终端），然后运行以下命令来安装`pillow_heif`：<br>
+
+```sh
+pip install pillow_heif
+```
+
+安装`pillow_heif`时，如果你还没有安装Pillow，它应该会自动安装Pillow作为依赖。如果出于某种原因Pillow没有被自动安装，你可以通过运行以下命令手动安装Pillow：<br>
+
+```sh
+pip install Pillow
+```
+
+安装完成后，再次运行你的代码，看看问题是否解决。如果你的项目依赖于特定版本的`pillow_heif`或Pillow，请确保安装了正确的版本以避免兼容性问题。<br>
+
+#### ModuleNotFoundError: No module named 'unstructured_inference':
+
+这个错误信息表明你的Python环境中没有安装`unstructured_inference`这个模块。这个模块可能是`langchain`或其依赖库的一部分，用于处理非结构化数据的推理。<br>
+
+解决这个问题的方法是安装缺失的模块。然而，根据错误信息和提供的上下文，`unstructured_inference`似乎不是一个广泛认知的Python包，这可能意味着它是一个特定项目的一部分，或者是一个较新的、尚未广泛采用的库。<br>
+
+首先，尝试使用pip直接安装`unstructured_inference`：
+
+```sh
+pip install unstructured_inference
+```
+
+如果这个命令失败，说明这个包可能不在PyPI上，或者有一个不同的安装方法。在这种情况下，你需要查找`unstructured_inference`模块的来源。这可能涉及到以下几个步骤：
+
+1. **检查`langchain`文档或GitHub仓库**：既然错误发生在使用`langchain`时，`unstructured_inference`可能是`langchain`或其依赖之一的一部分。检查`langchain`的官方文档或GitHub仓库，看是否有关于如何安装或解决依赖问题的指导。
+
+2. **搜索`unstructured_inference`**：尝试在网上搜索`unstructured_inference`，看是否有其他人遇到过类似的问题或者是否有专门的安装指南。
+
+3. **环境问题**：确认你正在使用的Python环境是正确的。有时候，如果你在虚拟环境中工作，可能会因为环境配置不当而导致模块找不到。
+
+如果上述方法都无法解决问题，你可能需要进一步调查`unstructured_inference`模块的确切来源和安装方法。这可能涉及到阅读更多的文档，或者在相关的开发者社区中寻求帮助。

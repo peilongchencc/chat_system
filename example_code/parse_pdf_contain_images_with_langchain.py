@@ -3,7 +3,7 @@
 @description:LangChain解析PDF文件示例,双栏PDF可解析。如果pdf含有图片,需要安装`rapidocr-onnxruntime`。
 @Prerequisite for use:pip install pypdf,pip install rapidocr-onnxruntime
 @Note:不支持GPU加速。
-@Reference link:https://python.langchain.com/docs/modules/data_connection/document_loaders/pdf#using-pypdf
+@Reference link:https://python.langchain.com/docs/modules/data_connection/document_loaders/pdf#extracting-images
 """
 
 from langchain_community.document_loaders import PyPDFLoader
